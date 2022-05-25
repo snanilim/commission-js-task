@@ -1,5 +1,8 @@
 const fs = require('fs');
 const { ArgumentParser } = require('argparse');
+const configuration = require('./configuration');
+
+
 
 const parser = new ArgumentParser({});
 
@@ -21,7 +24,7 @@ const calculation_commission_fees = (setFilename) => {
 
     all_json_data.forEach(element => {
         if(element.type === 'cash_in'){
-            const cash_in_commission = cash_in_comission_cal(element)
+            const cash_in_commission = cash_in_comission_cal(element.operation.amount)
             console.log(cash_in_commission)
 
         }else if(element.type === 'cash_out'){
@@ -30,7 +33,7 @@ const calculation_commission_fees = (setFilename) => {
                 console.log(cal_comission)
 
             }else if (element.user_type === 'juridical') {
-                const cal_comission = juridical_user_comission_cal(element)
+                const cal_comission = juridical_user_comission_cal(element.operation.amount)
                 console.log(cal_comission)
             }
         }
@@ -46,60 +49,46 @@ const readfile = (setFilename) => {
 }
 
 const natural_user_comission_cal = (element) => {
-    const d = new Date(element.date);
-    const tomorrow = new Date(element.date);
-
-    let day = d.getDay();
-    let new_day = day - 1;
-    if (new_day < 0){
-        new_day = 6
-    }
-
     if(natural_user_id_arr.includes(element.user_id)){
-        const cal_comission = natural_old_user(element, new_day, tomorrow, d)
+        const cal_comission = natural_user_between_week(element)
         return cal_comission
     }else{
-        const cal_comission = natural_new_user(element, new_day, tomorrow, d)
+        const cal_comission = natural_user_new_week(element)
         return cal_comission
     }
-
 }
 
 
 
 
 
-const natural_old_user = (element, new_day, tomorrow, d) => {
+const natural_user_between_week = (element) => {
+    const transaction_date = new Date(element.date);
+
     const user_id_index = natural_user_id_arr.indexOf(element.user_id)
     const user_info = natural_user[user_id_index]
-    // console.log("info", element)
+    const element_amount = element.operation.amount
 
-    // date check
-    const start = natural_user[user_id_index].start_date;
-    const end = natural_user[user_id_index].end_date;
+    const start = user_info.start_date;
+    const end = user_info.end_date;
 
-    if (d >= start && d <= end) {
-        // console.log('✅ date is between the 2 dates', d);
-        if(natural_user[user_id_index].amount > 1000){
-            // console.log("-------------yes beshi--------")
-            const cal_comission =  (element.operation.amount / 100) * 0.3
+    if (transaction_date >= start && transaction_date <= end) {
+        if(user_info.amount > 1000){
+            const cal_comission =  (element_amount / 100) * 0.3
             return rounding_number(cal_comission)
-        }else if((natural_user[user_id_index].amount + element.operation.amount) > 1000){
-            // console.log("-------------no beshi--------")
-            const comission_amount = (natural_user[user_id_index].amount + element.operation.amount) - 1000
+        }else if((user_info.amount + element_amount) > 1000){
+            const comission_amount = (user_info.amount + element_amount) - 1000
             const cal_comission =  (comission_amount / 100) * 0.3
             return rounding_number(cal_comission)
         }
     } else {
-        // console.log('⛔️ date is not in the range', d);
-        const {start_date, end_date} = date_cal (new_day, tomorrow, d)
-        // console.log("⛔️", start_date, end_date)
+        const {start_date, end_date} = start_to_end_date_maker(element.date)
 
-        natural_user[user_id_index].amount = element.operation.amount
-        natural_user[user_id_index].start_date = start_date
-        natural_user[user_id_index].end_date = end_date
+        user_info.amount = element_amount
+        user_info.start_date = start_date
+        user_info.end_date = end_date
 
-        const for_cal_amount = element.operation.amount
+        const for_cal_amount = element_amount
         const cal_comission =  amount_cal(for_cal_amount)
         return cal_comission
     }
@@ -108,9 +97,10 @@ const natural_old_user = (element, new_day, tomorrow, d) => {
 
 
 
-const natural_new_user = (element, new_day, tomorrow, d) => {
+const natural_user_new_week = (element) => {
+
     natural_user_id_arr.push(element.user_id)
-    const {start_date, end_date} = date_cal (new_day, tomorrow, d)
+    const {start_date, end_date} = start_to_end_date_maker(element.date)
 
     natural_user.push({user_id: element.user_id, amount: element.operation.amount, start_date: start_date, end_date: end_date})
     const for_cal_amount = element.operation.amount
@@ -121,7 +111,6 @@ const natural_new_user = (element, new_day, tomorrow, d) => {
 
 const amount_cal = (for_cal_amount) => {
     if(for_cal_amount > 1000){
-        // console.log("-------------yes beshi--------")
         const comission_amount = for_cal_amount - 1000
         const cal_comission = (comission_amount / 100) * 0.3
         return rounding_number(cal_comission)
@@ -132,10 +121,18 @@ const amount_cal = (for_cal_amount) => {
 
 
 
-const date_cal = (new_day, tomorrow, d) => {
+const start_to_end_date_maker = (element_date) => {
+    const transaction_date = new Date(element_date);
+    const tomorrow = new Date(element_date);
+
+    let day = transaction_date.getDay();
+    let new_day = day - 1;
+    if (new_day < 0){new_day = 6}
+
     const end_date_number = 6 - new_day
-    const start_date = new Date(tomorrow.setDate(d.getDate() - new_day) )
-    const end_date = new Date(tomorrow.setDate(d.getDate() + end_date_number))
+
+    const start_date = new Date(tomorrow.setDate(transaction_date.getDate() - new_day) )
+    const end_date = new Date(tomorrow.setDate(transaction_date.getDate() + end_date_number))
 
     return ({start_date, end_date})
 }
@@ -149,9 +146,7 @@ const date_cal = (new_day, tomorrow, d) => {
 
 const rounding_number = (number) => {
     const number_temp = parseFloat(number).toFixed(2);
-    
     const diff = number - parseFloat(number_temp)
-    
     if(diff>0){
         const new_number = parseFloat(number_temp)
         return (new_number + 0.01).toFixed(2)
@@ -162,26 +157,16 @@ const rounding_number = (number) => {
 
 
 
-const juridical_user_comission_cal = (element) => {
-    const cash_out_juri_cal = (element.operation.amount / 100) * 0.3;
-                
-    let cash_out_juri_commission = cash_out_juri_cal
-    if (cash_out_juri_commission < 0.50){
-        cash_out_juri_commission = 0.50
-    }
-
-    const cal_comission = cash_out_juri_cal.toFixed(2)
-    return rounding_number(cal_comission)
+const juridical_user_comission_cal = (amount) => {
+    let cash_out_cal = (amount / 100) * configuration.CASH_OUT_LEGEL_COMISSION_FEE;
+    const cash_out_juri_commission = cash_out_cal < configuration.CASH_OUT_MIN_LEGEL_AMOUNT ? configuration.CASH_OUT_MIN_LEGEL_AMOUNT : cash_out_cal;
+    return rounding_number(cash_out_juri_commission)
 }
 
 
-const cash_in_comission_cal = (element) => {
-    const cash_in_cal = (element.operation.amount / 100) * 0.03;
-    let cash_in_commission = cash_in_cal
-    if (cash_in_cal > 5.00){
-        cash_in_commission = 5.00
-    }
-    
+const cash_in_comission_cal = (amount) => {
+    const cash_in_cal = (amount / 100) * configuration.CASH_IN_COMISSION_FEE;
+    const cash_in_commission = cash_in_cal > configuration.CASH_IN_MAX_AMOUNT ? configuration.CASH_IN_MAX_AMOUNT : cash_in_cal;
     return rounding_number(cash_in_commission)
 }
 
