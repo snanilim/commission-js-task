@@ -1,20 +1,25 @@
 const fs = require('fs');
+const { ArgumentParser } = require('argparse');
 
-let rawdata = fs.readFileSync('input.json');
-let student = JSON.parse(rawdata);
+const parser = new ArgumentParser({});
 
-// todo: need to rearange by date
+parser.add_argument('-f', '--filename', { help: 'filename' });
+
+const getFilename = parser.parse_args().filename;
+const setFilename = getFilename == undefined ? "input.json" : getFilename
 
 
-const perweekfixed = 5.00
+
 
 let natural_user = []
 let natural_user_id_arr = []
 
 
 
-const main = () => {
-    student.forEach(element => {
+const calculation_commission_fees = (setFilename) => {
+    const all_json_data = readfile(setFilename);
+
+    all_json_data.forEach(element => {
         if(element.type === 'cash_in'){
             const cash_in_commission = cash_in_comission_cal(element)
             console.log(cash_in_commission)
@@ -32,6 +37,13 @@ const main = () => {
     });
 }
 
+
+const readfile = (setFilename) => {
+    const rawdata = fs.readFileSync(setFilename);
+    const all_json_data = JSON.parse(rawdata);
+
+    return all_json_data
+}
 
 const natural_user_comission_cal = (element) => {
     const d = new Date(element.date);
@@ -71,12 +83,12 @@ const natural_old_user = (element, new_day, tomorrow, d) => {
         if(natural_user[user_id_index].amount > 1000){
             // console.log("-------------yes beshi--------")
             const cal_comission =  (element.operation.amount / 100) * 0.3
-            return parseFloat(cal_comission)
+            return rounding_number(cal_comission)
         }else if((natural_user[user_id_index].amount + element.operation.amount) > 1000){
             // console.log("-------------no beshi--------")
             const comission_amount = (natural_user[user_id_index].amount + element.operation.amount) - 1000
             const cal_comission =  (comission_amount / 100) * 0.3
-            return parseFloat(cal_comission)
+            return rounding_number(cal_comission)
         }
     } else {
         // console.log('⛔️ date is not in the range', d);
@@ -112,9 +124,9 @@ const amount_cal = (for_cal_amount) => {
         // console.log("-------------yes beshi--------")
         const comission_amount = for_cal_amount - 1000
         const cal_comission = (comission_amount / 100) * 0.3
-        return parseFloat(cal_comission)
+        return rounding_number(cal_comission)
     }else{
-        return parseFloat(0.00)
+        return rounding_number(0.00)
     }
 }
 
@@ -135,6 +147,21 @@ const date_cal = (new_day, tomorrow, d) => {
 
 
 
+const rounding_number = (number) => {
+    const number_temp = parseFloat(number).toFixed(2);
+    
+    const diff = number - parseFloat(number_temp)
+    
+    if(diff>0){
+        const new_number = parseFloat(number_temp)
+        return (new_number + 0.01).toFixed(2)
+    }else{
+        return number_temp;
+    }
+}
+
+
+
 const juridical_user_comission_cal = (element) => {
     const cash_out_juri_cal = (element.operation.amount / 100) * 0.3;
                 
@@ -144,7 +171,7 @@ const juridical_user_comission_cal = (element) => {
     }
 
     const cal_comission = cash_out_juri_cal.toFixed(2)
-    return parseFloat(cal_comission)
+    return rounding_number(cal_comission)
 }
 
 
@@ -155,8 +182,8 @@ const cash_in_comission_cal = (element) => {
         cash_in_commission = 5.00
     }
     
-    return parseFloat(cash_in_commission)
+    return rounding_number(cash_in_commission)
 }
 
 
-main();
+calculation_commission_fees(setFilename);
