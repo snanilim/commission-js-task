@@ -5,9 +5,9 @@ const naturalUserIdArr = [];
 
 const naturalUserAmountCal = (forCalAmount) => {
   if (forCalAmount > 1000) {
-    const comissionAmount = forCalAmount - 1000;
-    const calComission = (comissionAmount / 100) * 0.3;
-    return roundingNumber(calComission);
+    const commissionAmount = forCalAmount - 1000;
+    const calCommission = (commissionAmount / 100) * 0.3;
+    return roundingNumber(calCommission);
   }
   return roundingNumber(0.00);
 };
@@ -23,16 +23,16 @@ const naturalUserAlreadyCashOut = (element) => {
   const end = userInfo.endDate;
 
   if (transactionDate >= start && transactionDate <= end) {
-    let calComission = 0.00;
+    let calCommission = 0.00;
     if (userInfo.amount > 1000) {
-      calComission = (elementAmount / 100) * 0.3;
+      calCommission = (elementAmount / 100) * 0.3;
     } else if ((userInfo.amount + elementAmount) > 1000) {
-      const comissionAmount = (userInfo.amount + elementAmount) - 1000;
-      calComission = (comissionAmount / 100) * 0.3;
+      const commissionAmount = (userInfo.amount + elementAmount) - 1000;
+      calCommission = (commissionAmount / 100) * 0.3;
     }
 
     userInfo.amount += elementAmount;
-    return roundingNumber(calComission);
+    return roundingNumber(calCommission);
   }
   const { startDate, endDate } = startToEndDateMaker(element.date);
 
@@ -41,8 +41,8 @@ const naturalUserAlreadyCashOut = (element) => {
   userInfo.endDate = endDate;
 
   const forCalAmount = elementAmount;
-  const calComission = naturalUserAmountCal(forCalAmount);
-  return calComission;
+  const calCommission = naturalUserAmountCal(forCalAmount);
+  return calCommission;
 };
 
 const naturalUserNewEntry = (element) => {
@@ -56,15 +56,15 @@ const naturalUserNewEntry = (element) => {
     endDate,
   });
   const forCalAmount = element.operation.amount;
-  const calComission = naturalUserAmountCal(forCalAmount);
-  return calComission;
+  const calCommission = naturalUserAmountCal(forCalAmount);
+  return calCommission;
 };
 
-exports.naturalUserComissionCal = (element) => {
+exports.naturalUserCommissionCal = (element) => {
   if (naturalUserIdArr.includes(element.user_id)) {
-    const calComission = naturalUserAlreadyCashOut(element);
-    return calComission;
+    const calCommission = naturalUserAlreadyCashOut(element);
+    return calCommission;
   }
-  const calComission = naturalUserNewEntry(element);
-  return calComission;
+  const calCommission = naturalUserNewEntry(element);
+  return calCommission;
 };

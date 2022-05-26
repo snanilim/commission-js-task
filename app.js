@@ -1,7 +1,7 @@
 const { ArgumentParser } = require('argparse');
 const { readfile } = require('./util');
-const { juridicalUserComissionCal, cashInComissionCal } = require('./comissionCalculation');
-const { naturalUserComissionCal } = require('./naturalUserComission');
+const { juridicalUserCommissionCal, cashInCommissionCal } = require('./commissionCalculation');
+const { naturalUserCommissionCal } = require('./naturalUserCommission');
 
 const parser = new ArgumentParser({});
 parser.add_argument('-f', '--filename', { help: 'filename' });
@@ -13,15 +13,15 @@ const calculationCommissionFees = (filename) => {
 
   allJsonData.forEach((element) => {
     if (element.type === 'cash_in') {
-      const cashInCommission = cashInComissionCal(element.operation.amount);
+      const cashInCommission = cashInCommissionCal(element.operation.amount);
       process.stdout.write(`${cashInCommission}\n`);
     } else if (element.type === 'cash_out') {
       if (element.user_type === 'natural') {
-        const calComission = naturalUserComissionCal(element);
-        process.stdout.write(`${calComission}\n`);
+        const calCommission = naturalUserCommissionCal(element);
+        process.stdout.write(`${calCommission}\n`);
       } else if (element.user_type === 'juridical') {
-        const calComission = juridicalUserComissionCal(element.operation.amount);
-        process.stdout.write(`${calComission}\n`);
+        const calCommission = juridicalUserCommissionCal(element.operation.amount);
+        process.stdout.write(`${calCommission}\n`);
       }
     }
   });
