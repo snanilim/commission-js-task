@@ -1,18 +1,20 @@
+const configuration = require('./configuration');
 const { roundingNumber, startToEndDateMaker } = require('./util');
 
 const naturalUser = [];
 const naturalUserIdArr = [];
 
+// this amount of task common for some function thats why create this function
 const naturalUserAmountCal = (forCalAmount) => {
-  if (forCalAmount > 1000) {
-    const commissionAmount = forCalAmount - 1000;
-    const calCommission = (commissionAmount / 100) * 0.3;
-    return roundingNumber(calCommission);
+  let calCommission = 0.00;
+  if (forCalAmount > configuration.CASH_OUT_NATURAL_WEEK_LIMIT) {
+    const commissionAmount = forCalAmount - configuration.CASH_OUT_NATURAL_WEEK_LIMIT;
+    calCommission = (commissionAmount / 100) * configuration.CASH_OUT_NATURAL_COMMISSION_FEE;
   }
-  return roundingNumber(0.00);
+  return calCommission;
 };
 
-const naturalUserAlreadyCashOut = (element) => {
+const naturalUserAlreadyCashOutInWeek = (element) => {
   const transactionDate = new Date(element.date);
 
   const userIdIndex = naturalUserIdArr.indexOf(element.user_id);
@@ -22,18 +24,23 @@ const naturalUserAlreadyCashOut = (element) => {
   const start = userInfo.startDate;
   const end = userInfo.endDate;
 
+  // Checking if this user has a new cashout this week
   if (transactionDate >= start && transactionDate <= end) {
     let calCommission = 0.00;
-    if (userInfo.amount > 1000) {
-      calCommission = (elementAmount / 100) * 0.3;
-    } else if ((userInfo.amount + elementAmount) > 1000) {
-      const commissionAmount = (userInfo.amount + elementAmount) - 1000;
-      calCommission = (commissionAmount / 100) * 0.3;
+    const totalAmount = userInfo.amount + elementAmount;
+
+    // checking if this user already exist limit or not
+    if (userInfo.amount > configuration.CASH_OUT_NATURAL_WEEK_LIMIT) {
+      calCommission = (elementAmount / 100) * configuration.CASH_OUT_NATURAL_COMMISSION_FEE;
+    } else if (totalAmount > configuration.CASH_OUT_NATURAL_WEEK_LIMIT) {
+      const commissionAmount = totalAmount - configuration.CASH_OUT_NATURAL_WEEK_LIMIT;
+      calCommission = (commissionAmount / 100) * configuration.CASH_OUT_NATURAL_COMMISSION_FEE;
     }
 
     userInfo.amount += elementAmount;
-    return roundingNumber(calCommission);
+    return calCommission;
   }
+  // if not generate new startdate end date or new week
   const { startDate, endDate } = startToEndDateMaker(element.date);
 
   userInfo.amount = elementAmount;
@@ -62,9 +69,9 @@ const naturalUserNewEntry = (element) => {
 
 exports.naturalUserCommissionCal = (element) => {
   if (naturalUserIdArr.includes(element.user_id)) {
-    const calCommission = naturalUserAlreadyCashOut(element);
-    return calCommission;
+    const calCommission = naturalUserAlreadyCashOutInWeek(element);
+    return roundingNumber(calCommission);
   }
   const calCommission = naturalUserNewEntry(element);
-  return calCommission;
+  return roundingNumber(calCommission);
 };

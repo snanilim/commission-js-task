@@ -12,3 +12,7 @@ node app.js -f input.json
 ```
 node app.js
 ```
+
+```
+npm i jest-cli -g
+```
